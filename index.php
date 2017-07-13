@@ -1,119 +1,112 @@
-<?php
-	//Łączę się z bazą JR
-	$db_name="jobrouter";
-	$db_login="root";
-	$db_password="Cdrtyj159polki!";
-	$db_host="127.0.0.1";
-	$JRDB = mysqli_connect($db_host, $db_login, $db_password, $db_name);
-	
-	//Lista możliwych urządzeń do wyboru
-	$sqlHardware =
-		"SELECT DISTINCT
-			a.productID
-		FROM
-			st_timeemployee AS a
-			INNER JOIN bkf_products AS b ON a.productID = b.productId
-		ORDER BY
-			a.productID ASC";
-	$hardware = mysqli_query($JRDB, $sqlHardwareList);
-	
-	//Wybór montażu bądź spawalni na bazie listy (Montaz lub Spawalnia), użyjemy wbudowanej w język i damy prostą funkcję click z jQuery
-	$actionType = 'Montaz';
-			
-	//Rodzaj myjni lub innego urządzenia ktore user wybiera z $hardware, np. CW3M5
-	$hwType = 'CW4T5';
-	
-	//Wyciaga numery seryjne do tabeli, na bazie wybranego urzadzenia
-	$sqlSerials =
-		"SELECT DISTINCT
-			serialNumber
-		FROM
-			st_timeemployee
-		WHERE
-			productId = '".$hwType."'
-		ORDER BY
-			serialNumber ASC";
-	$serials = mysqli_query($JRDB, $sqlSerials);
-	
-	//Numer seryjny który wybrał user na bazie listy $serials
-	$serial = 19936;
-	
-	//Wyciaga liste czynnosci
-	$sqlActivities =
-		"SELECT DISTINCT
-			a.Name
-		FROM
-			bkf_cwtimeaction AS a
-			INNER JOIN bkf_standardtimes AS b ON b.action = a.Name
-		WHERE
-			a.Type = '".$actionType."'
-			AND b.hwType = '".$hwType."'
-		ORDER BY
-			a.Name ASC";
-	$activities = mysqli_query($JRDB, $sqlActivities);
-	
-	//Pracownicy powiązani z urządzeniem
-	//Wybór zespołu który ma pokazać (z listy)
-	$teamLeader = 'l.kot';
-	
-	//Pracownicy powiązani z urządzeniem i zespołem
-	$sqlWorkers =
-		"SELECT
-			username
-		FROM
-			jrusers
-		WHERE
-			department = 'Produkcja'
-			AND (blocked <> 1
-			OR blocked IS NULL)
-			AND supervisor = '".$teamLeader."'
-		ORDER BY
-			lastname ASC";
-	$workers = mysqli_query($JRDB, $sqlWorkers);
-	//ID kolumn (k) i wierszy (w)
-	$w = 0;
-	$k = 0;
+<!DOCTYPE html>
+<html ><head>
+<meta charset="UTF-8">
+<script scr="js/conf.js"></script>
+<script src="js/jquery-2.1.4.js" type="text/javascript"></script>
+<script src="js/jquery-ui-1.11.4.custom/jquery-ui.js"></script>
+<link rel="stylesheet" href="css/table.css"
+<link rel="stylesheet" href="js/jquery-ui-1.11.4.custom/jquery-ui.css">
+<link rel="stylesheet" href="js/jquery-ui-1.11.4.custom/jquery-ui.theme.css">
+<script src="js/valform.js" type="text/javascript"></script>
+<link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+<link rel="stylesheet" href="bootstrap/css/bootstrap-theme.min.css"> 
+<script src="bootstrap/js/bootstrap.min.js"></script>
 
-	
-	//Wpisuje nr seryjny urządzenia
-	$result[0][0] = $serial;
-	
-	//Wpisuje czynnosci
-	while ($row = mysqli_fetch_assoc($activities))
-	{
-		$result[$w+1][0] = $row['Name'];
-		$w++;
-	}
-	
-	//Wpisuje osoby do pierwszego (tj. zerowego) wiersza
-	while ($row = mysqli_fetch_assoc($workers))
-	{
-		$result[0][$k+1] = $row['username'];
-		$k++;
-	}
-	
-	for ($i = 1; $i <= $w; $i++)
-	{
-		for ($j = 1; $j <= $k; $j++)
-		{
-				//Zapytanie sumujące czas poświęcony na daną czynność przy danej osobie i ustalonym jednym nr seryjnym
-				$sqlCellValue =
-					"SELECT
-						SUM(time) AS CellSum
-					FROM
-						st_timeemployee
-					WHERE
-						employee = '".$result[0][$j]."'
-						AND action = '".$result[$i][0]."'
-						AND serialNumber = ".$serial."";
-				$cellValue = mysqli_query($JRDB, $sqlCellValue);
-				$row = mysqli_fetch_assoc($cellValue);
-				$result[$i][$j] = $row['CellSum'];
-		}
-	}
-	foreach($result as $key => $value)
-		foreach ($value as $key2 => $value2)
-			{
-				echo $key2.'	'.$value2.'<br>';
-			}
+<style>
+.body
+{
+	background-image:url('graphics/rbs.jpg');
+}
+table th
+{
+	background-color:black;
+	font-size:25px;
+	color:white;
+}
+table tr
+{
+	background-color:white;
+	font-size:20x;
+	font-weight:bold;
+
+}
+</style>
+  <title>Protdukcja TimeLines</title>  
+
+ <script src="js/prefixfree.min.js"></script>
+ 
+    
+  </head>
+
+  <body>
+
+    <div class="body"></div>
+		<div class="grad"></div>
+		<div class="header">
+			<div>Produkcja  <span>TimeLines by GuruGozdek ver. 1.0</span><br>
+          </div>
+		
+		</div>
+        <div class="login">
+<?php
+require_once('conf/times.php');
 ?>
+
+	<br>
+	<section id="zero">
+ 	<input type="button" value="Czasy Dana Myjnia" name="submit" id="danaMyjnia">	<input type="button" value="Czasy Dany Pracownik" name="submit" id="danyPracownik"><br><br>
+	
+	<input type="button" value="Czasy Typ Myjni" name="submit" id="typMyjni">	<input type="button" value="Test" name="submit" id="test">
+	</section>
+
+
+	<section id="one" hidden="true">
+	<?php
+		$d=new times();
+		$result=$d->czasyDanaMyjnia();
+		$d->getView($result);
+	?>
+	<input type="button" value="Powrót" name="submit" id="back1" style="width: 550px;
+	height: 70px; margin:0px">
+	
+	</section>
+
+	<section id="two" hidden="true">
+	<?php
+		$d=new times();
+		$result=$d->czasyTypMyjni();
+		$d->getView($result);
+	?>
+	<input type="button" value="Powrót" name="submit" id="back2" style="width: 550px;
+	height: 70px; margin:0px">
+	
+	</section>
+	
+	
+	
+	
+	
+	<script>
+		$('#danaMyjnia').click(function()
+		{
+		$('#zero').hide('slow'); $('#one').show('slow');
+		});
+		$('#back1').click(function()
+		{
+		$('#one').hide('slow'); $('#zero').show('slow');
+		});
+
+		$('#typMyjni').click(function()
+		{
+		$('#zero').hide('slow'); $('#two').show('slow');
+		});
+		$('#back2').click(function()
+		{
+		$('#two').hide('slow'); $('#zero').show('slow');
+		});
+	</script>
+	
+
+
+
+</html>

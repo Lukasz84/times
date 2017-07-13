@@ -18,10 +18,10 @@
 	$hardware = mysqli_query($JRDB, $sqlHardware);
 	
 	//Wybór montażu bądź spawalni na bazie listy (Montaz lub Spawalnia), użyjemy wbudowanej w język i damy prostą funkcję click z jQuery
-	$actionType = NULL;
+	$actionType = 'Montaz';
 			
 	//Rodzaj myjni lub innego urządzenia ktore user wybiera z $Hardware, np. CW3M5
-	$hwType = NULL;
+	$hwType = 'CW3T5';
 	
 	//Wyciaga numery seryjne do tabeli, na bazie wybranego urzadzenia
 	$sqlSerials =
@@ -106,4 +106,5 @@
 				$result[$i][$j] = $row['CellSum'];
 		}
 	}
+	print_r($result);
 ?>

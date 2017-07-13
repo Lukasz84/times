@@ -53,7 +53,7 @@
 	$activities = mysqli_query($JRDB, $sqlActivities);
 	
 	//Wybór zespołu który ma pokazać (z listy)
-	$teamLeader = NULL
+	$teamLeader = 'NULL';
 	
 	//Pracownicy powiązani z urządzeniem i zespołem
 	$sqlWorkers =
